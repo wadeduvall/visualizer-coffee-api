@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -35,33 +35,46 @@ pub struct Data {
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Shot {
-    id: String,
-    profile_title: String,
-    user_id: String,
+    pub id: String,
+    pub profile_title: String,
+    pub user_id: String,
     #[serde_as(as = "DisplayFromStr")]
-    drink_tds: f32,
+    pub drink_tds: f32,
     #[serde_as(as = "DisplayFromStr")]
-    drink_ey: f32,
-    espresso_enjoyment: u8,
+    pub drink_ey: f32,
+    pub espresso_enjoyment: u8,
     #[serde_as(as = "DisplayFromStr")]
-    bean_weight: f32,
+    pub bean_weight: f32,
     #[serde_as(as = "DisplayFromStr")]
-    drink_weight: f32,
-    grinder_model: Option<String>,
+    pub drink_weight: f32,
+    pub grinder_model: Option<String>,
     #[serde_as(as = "DisplayFromStr")]
-    grinder_setting: f32,
-    bean_brand: Option<String>,
-    bean_type: Option<String>,
-    roast_date: Option<DateTime<Local>>,
-    espresso_notes: Option<String>,
-    roast_level: Option<String>,
-    bean_notes: Option<String>,
-    start_time: DateTime<Local>,
-    metadata: Option<String>,
+    pub grinder_setting: f32,
+    pub bean_brand: Option<String>,
+    pub bean_type: Option<String>,
+    pub roast_date: Option<DateTime<Local>>,
+    pub espresso_notes: Option<String>,
+    pub roast_level: Option<String>,
+    pub bean_notes: Option<String>,
+    pub start_time: DateTime<Local>,
+    pub metadata: Option<String>,
     #[serde_as(as = "Option<Vec<DisplayFromStr>>")]
-    timeframe: Option<Vec<f32>>,
-    data: Option<Data>,
-    duration: f32,
-    image_preview: String,
-    profile_url: String,
+    pub timeframe: Option<Vec<f32>>,
+    pub data: Option<Data>,
+    pub duration: f32,
+    pub image_preview: String,
+    pub profile_url: String,
+}
+
+#[serde_as]
+#[derive(Deserialize, Debug)]
+pub struct Item {
+    #[serde(with = "serde_with::chrono_0_4::datetime_utc_ts_seconds_from_any")]
+    pub clock: DateTime<Utc>,
+    pub id: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ShotList {
+    pub data: Vec<Item>,
 }

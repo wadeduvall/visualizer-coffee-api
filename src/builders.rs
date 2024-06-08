@@ -13,16 +13,14 @@ pub struct ClientBuilder {
 }
 
 pub struct ShotBuilder {
-    shot_id: String,
     essentials: bool,
     public: bool,
     backend: RequestBuilder,
 }
 
 impl ShotBuilder {
-    const fn new(shot_id: String, backend: RequestBuilder) -> Self {
+    const fn new(backend: RequestBuilder) -> Self {
         Self {
-            shot_id,
             essentials: false,
             public: false,
             backend,
@@ -50,14 +48,42 @@ impl Builder for ShotBuilder {
             builder = builder.form(&params);
         }
         let response = builder.send().await?;
-        let shot: Shot = response.json::<Shot>().await?;
-        Ok(shot)
+        response.json::<Shot>().await
     }
 }
 
 pub struct ShotListBuilder {
-    essencials: bool,
     public: bool,
+    page: u32,
+    item: u32,
+    backend: RequestBuilder,
+}
+
+impl ShotListBuilder {
+    const fn new(backend: RequestBuilder) -> Self {
+        Self {
+            public: false,
+            page: 1,
+            item: 10,
+            backend,
+        }
+    }
+
+    #[must_use]
+    pub const fn public(mut self) -> Self {
+        self.public = true;
+        self
+    }
+}
+
+impl Builder for ShotListBuilder {
+    async fn build<ShotList: for<'de> serde::Deserialize<'de>>(self) -> Result<ShotList, Error> {
+        let mut builder = self.backend;
+        let params = [("page", self.page), ("items", self.item)];
+        builder = builder.form(&params);
+        let response = builder.send().await?;
+        response.json::<ShotList>().await
+    }
 }
 
 impl ClientBuilder {
@@ -76,7 +102,6 @@ impl ClientBuilder {
     #[must_use]
     pub fn shot(self, shot_id: &str) -> ShotBuilder {
         ShotBuilder::new(
-            String::from(shot_id),
             self.backend
                 .get(format!(
                     "https://visualizer.coffee/api/shots/{shot_id}/download"
@@ -85,18 +110,12 @@ impl ClientBuilder {
         )
     }
 
-    /// Get users shots
-    /// # Errors
-    /// This method will return the `reqwest::Error` if it fails.
-    pub async fn get_shots(self, params: Option<Vec<(&str, &str)>>) -> Result<String, Error> {
-        let mut builder = self
-            .backend
-            .get("https://visualizer.coffee/api/shots/")
-            .basic_auth(self.username, Some(self.password));
-        if let Some(p) = params {
-            builder = builder.form(&p);
-        }
-        let result = builder.send().await?.text().await?;
-        Ok(result)
+    #[must_use]
+    pub fn shot_list(self) -> ShotListBuilder {
+        ShotListBuilder::new(
+            self.backend
+                .get("https://visualizer.coffee/api/shots")
+                .basic_auth(self.username, Some(self.password)),
+        )
     }
 }

@@ -1,11 +1,11 @@
 pub mod shot;
 
-pub mod builder;
+pub mod builders;
 
 #[cfg(test)]
 mod tests {
-    use crate::builder::{Builder, ClientBuilder};
-    use crate::shot::Shot;
+    use crate::builders::{Builder, ClientBuilder};
+    use crate::shot::{Shot, ShotList};
 
     #[tokio::test]
     async fn test_get_shots_essentials() {
@@ -28,5 +28,12 @@ mod tests {
             .await
             .unwrap();
         println!("{shot:?}");
+    }
+
+    #[tokio::test]
+    async fn test_get_shot_list() {
+        let client = ClientBuilder::connect("", "");
+        let shot_list: ShotList = client.shot_list().build().await.unwrap();
+        println!("{shot_list:?}");
     }
 }
