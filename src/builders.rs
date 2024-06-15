@@ -13,16 +13,20 @@ pub struct ClientBuilder {
 }
 
 pub struct ShotBuilder {
+    username: String,
+    password: String,
     essentials: bool,
-    public: bool,
+    code: Option<String>,
     backend: RequestBuilder,
 }
 
 impl ShotBuilder {
-    const fn new(backend: RequestBuilder) -> Self {
+    const fn new(username: String, password: String, backend: RequestBuilder) -> Self {
         Self {
+            username,
+            password,
             essentials: false,
-            public: false,
+            code: None,
             backend,
         }
     }
@@ -34,8 +38,8 @@ impl ShotBuilder {
     }
 
     #[must_use]
-    pub const fn public(mut self) -> Self {
-        self.public = true;
+    pub fn shared(mut self, code: &str) -> Self {
+        self.code = Some(String::from(code));
         self
     }
 }
@@ -43,6 +47,17 @@ impl ShotBuilder {
 impl Builder for ShotBuilder {
     async fn build<Shot: for<'de> serde::Deserialize<'de>>(self) -> Result<Shot, Error> {
         let mut builder = self.backend;
+        match self.code {
+            Some(code) => {
+                let params = [("code", code)];
+                // NOTE: I really don't like this here and points to shortcomings in the upstream
+                // API, or maybe my abstraction.
+                builder = reqwest::Client::new()
+                    .get("https://visualizer.coffee/api/shots/shared")
+                    .form(&params);
+            }
+            None => builder = builder.basic_auth(self.username, Some(self.password)),
+        }
         if self.essentials {
             let params = [("essentials", self.essentials)];
             builder = builder.form(&params);
@@ -53,6 +68,8 @@ impl Builder for ShotBuilder {
 }
 
 pub struct ShotListBuilder {
+    username: String,
+    password: String,
     public: bool,
     page: u32,
     item: u32,
@@ -60,8 +77,10 @@ pub struct ShotListBuilder {
 }
 
 impl ShotListBuilder {
-    const fn new(backend: RequestBuilder) -> Self {
+    const fn new(username: String, password: String, backend: RequestBuilder) -> Self {
         Self {
+            username,
+            password,
             public: false,
             page: 1,
             item: 10,
@@ -79,6 +98,9 @@ impl ShotListBuilder {
 impl Builder for ShotListBuilder {
     async fn build<ShotList: for<'de> serde::Deserialize<'de>>(self) -> Result<ShotList, Error> {
         let mut builder = self.backend;
+        if !self.public {
+            builder = builder.basic_auth(self.username, Some(self.password));
+        }
         let params = [("page", self.page), ("items", self.item)];
         builder = builder.form(&params);
         let response = builder.send().await?;
@@ -102,20 +124,20 @@ impl ClientBuilder {
     #[must_use]
     pub fn shot(self, shot_id: &str) -> ShotBuilder {
         ShotBuilder::new(
-            self.backend
-                .get(format!(
-                    "https://visualizer.coffee/api/shots/{shot_id}/download"
-                ))
-                .basic_auth(self.username, Some(self.password)),
+            self.username,
+            self.password,
+            self.backend.get(format!(
+                "https://visualizer.coffee/api/shots/{shot_id}/download"
+            )),
         )
     }
 
     #[must_use]
     pub fn shot_list(self) -> ShotListBuilder {
         ShotListBuilder::new(
-            self.backend
-                .get("https://visualizer.coffee/api/shots")
-                .basic_auth(self.username, Some(self.password)),
+            self.username,
+            self.password,
+            self.backend.get("https://visualizer.coffee/api/shots"),
         )
     }
 }

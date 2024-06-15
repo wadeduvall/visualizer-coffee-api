@@ -36,4 +36,11 @@ mod tests {
         let shot_list: ShotList = client.shot_list().build().await.unwrap();
         println!("{shot_list:?}");
     }
+
+    #[tokio::test]
+    async fn test_get_pub_shot_list() {
+        let client = ClientBuilder::connect("", "");
+        let shot_list: ShotList = client.shot_list().build().await.unwrap();
+        println!("{shot_list:?}");
+    }
 }

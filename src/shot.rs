@@ -4,7 +4,7 @@ use serde_with::{serde_as, DisplayFromStr};
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Data {
+pub struct ShotData {
     #[serde_as(as = "Vec<DisplayFromStr>")]
     espresso_flow: Vec<f32>,
     #[serde_as(as = "Vec<DisplayFromStr>")]
@@ -60,7 +60,7 @@ pub struct Shot {
     pub metadata: Option<String>,
     #[serde_as(as = "Option<Vec<DisplayFromStr>>")]
     pub timeframe: Option<Vec<f32>>,
-    pub data: Option<Data>,
+    pub data: Option<ShotData>,
     pub duration: f32,
     pub image_preview: String,
     pub profile_url: String,
